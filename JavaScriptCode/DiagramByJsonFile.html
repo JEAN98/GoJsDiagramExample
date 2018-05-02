@@ -18,7 +18,7 @@
 
 function reply_click()
 {
-   /* alert("asdfasdf");*/
+   /*Save diagram information like json file*/
      var text = JSON.stringify(myDiagram.model);
          var a = document.createElement('a');
          var filename = "filename.json";
@@ -134,11 +134,10 @@ function reply_click()
           },
           new go.Binding("text", "toText"))
       );
-    // create the model for the E-R diagram
-    jQuery.getJSON('folder/Diagram1.json', load);
-    /*myDiagram.model = new go.GraphLinksModel(nodeDataArray, linkDataArray);*/
-	document.getElementById("svgButton").addEventListener("click", makeSvg); //SaveDiagramLikeSvgfile
+    // create the model for diagram by json file from this path
+    jQuery.getJSON('folder/Diagram1.json', load);  //Also you can change with Diagram2
 	
+	document.getElementById("svgButton").addEventListener("click", makeSvg); //SaveDiagramLikeSvgfile
   }
   function load(jsondata) {
       // create the model from the data in the JavaScript object parsed from JSON text
@@ -169,6 +168,7 @@ function reply_click()
     });
   }
 
+  //Here we can save the diagram like svg file 
   function makeSvg() {
     var svg = myDiagram.makeSvg({ scale: 1, background: "white" });
     var svgstr = new XMLSerializer().serializeToString(svg);
@@ -188,21 +188,22 @@ function reply_click()
   <script> 
       $("#save-btn").click(function(){
 
-        //update model
+        //Here we can update model information by user movements
         for (i = 0; i < myDiagram.model.nodeDataArray.length; i++) {
-            var data = myDiagram.model.nodeDataArray[i];  // get the first node data
+            var data = myDiagram.model.nodeDataArray[i];  // get the node data by array index
             var node = myDiagram.findNodeForData(data);   // find the corresponding Node
-            var p = node.location.copy();  //getLocation
-            myDiagram.model.nodeDataArray[i].loc = p.x + " "+ p.y;
+            var p = node.location.copy();  //get current Location of node 
+            myDiagram.model.nodeDataArray[i].loc = p.x + " "+ p.y; //Updating the location with current location of each node by array
         }
-
-        var nodesDataArray = JSON.stringify(myDiagram.model.nodeDataArray);
+		
+		
+		//Sava nodesDataArray and linksDataArray like json  file
+        var nodesDataArray = JSON.stringify(myDiagram.model.nodeDataArray); 
         var linksDataArray = JSON.stringify(myDiagram.model.linkDataArray);
         var blob = new Blob(["[{\"nodes\": " +nodesDataArray +" , \"links\":" +linksDataArray + " }]"],
             {type: "json/plain;charset=utf-8"}        
             );
-    
-            saveAs(blob, "test1File.json");
+                saveAs(blob, "test1File.json"); //Saving json file on current server
       });
       </script>
 </div>
