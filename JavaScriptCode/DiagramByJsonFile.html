@@ -1,0 +1,210 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entity Relationship</title>
+<meta name="description" content="Interactive entity-relationship diagram or data model diagram implemented by GoJS in JavaScript for HTML." />
+<!-- Copyright 1998-2018 by Northwoods Software Corporation. -->
+<meta charset="UTF-8">
+<script src="go.js"></script>
+<script src="jquery.min.js"></script>
+<script type="text/javascript" src="https://fastcdn.org/FileSaver.js/1.1.20151003/FileSaver.js" ></script>
+<script type="text/javascript">
+
+</script>
+<!--  <script src="goSamples.js"></script>  this is only for the GoJS Samples framework -->
+
+<script id="code">
+
+function reply_click()
+{
+   /* alert("asdfasdf");*/
+     var text = JSON.stringify(myDiagram.model);
+         var a = document.createElement('a');
+         var filename = "filename.json";
+         a.setAttribute('href', 'data:text/plain;charset=utf-u,'+encodeURIComponent(text));
+            a.setAttribute('download', filename);
+        a.click()
+}
+
+
+  function init() {
+    if (window.goSamples) goSamples();  // init for these samples -- you don't need to call this
+    var $ = go.GraphObject.make;  // for conciseness in defining templates
+    myDiagram =
+      $(go.Diagram, "myDiagramDiv",  // must name or refer to the DIV HTML element
+        {
+          initialContentAlignment: go.Spot.Center,  // center the content
+          "undoManager.isEnabled": true  // enable undo & redo
+        });
+    // define several shared Brushes
+    var bluegrad = $(go.Brush, "Linear", { 0: "rgb(150, 150, 250)", 0.5: "rgb(86, 86, 186)", 1: "rgb(86, 86, 186)" });
+    var greengrad = $(go.Brush, "Linear", { 0: "rgb(158, 209, 159)", 1: "rgb(67, 101, 56)" });
+    var redgrad = $(go.Brush, "Linear", { 0: "rgb(206, 106, 100)", 1: "rgb(180, 56, 50)" });
+    var yellowgrad = $(go.Brush, "Linear", { 0: "rgb(254, 221, 50)", 1: "rgb(254, 182, 50)" });
+    var lightgrad = $(go.Brush, "Linear", { 1: "#E6E6FA", 0: "#FFFAF0" });
+    // the template for each attribute in a node's array of item data
+    var itemTempl =
+      $(go.Panel, "Horizontal",
+        $(go.Shape,
+          { desiredSize: new go.Size(10, 10) },
+          new go.Binding("figure", "figure"),
+          new go.Binding("fill", "color")),
+        $(go.TextBlock,
+          { stroke: "#333333",
+            font: "bold 14px sans-serif" },
+          new go.Binding("text", "name"))
+      );
+    // define the Node template, representing an entity
+    myDiagram.nodeTemplate =
+      $(go.Node, "Auto",  // the whole node panel
+       { selectionAdorned: true,
+          resizable: true,
+          layoutConditions: go.Part.LayoutStandard & ~go.Part.LayoutNodeSized,
+          fromSpot: go.Spot.AllSides,
+          toSpot: go.Spot.AllSides,
+          isShadowed: true,
+          shadowColor: "#C5C1AA" },
+          new go.Binding("location", "loc", go.Point.parse),  // convert string into a Point value
+        // whenever the PanelExpanderButton changes the visible property of the "LIST" panel,
+        // clear out any desiredSize set by the ResizingTool.
+       // new go.Binding("desiredSize", "visible", function(v) { return new go.Size(NaN, NaN); }).ofObject("LIST"),
+        // define the node's outer shape, which will surround the Table
+        $(go.Shape, "Rectangle",
+          { fill: lightgrad, stroke: "#756875", strokeWidth: 3 }),
+        $(go.Panel, "Table",
+          { margin: 8, stretch: go.GraphObject.Fill },
+          $(go.RowColumnDefinition, { row: 0, sizing: go.RowColumnDefinition.None }),
+          // the table header
+          $(go.TextBlock,
+            {
+              row: 0, alignment: go.Spot.Center,
+              margin: new go.Margin(0, 14, 0, 2),  // leave room for Button
+              font: "bold 16px sans-serif"
+            },
+            new go.Binding("text", "key")),
+          // the collapse/expand button
+          $("PanelExpanderButton", "LIST",  // the name of the element whose visibility this button toggles
+            { row: 0, alignment: go.Spot.TopRight }),
+          // the list of Panels, each showing an attribute
+          $(go.Panel, "Vertical",
+            {
+              name: "LIST",
+              row: 1,
+              padding: 3,
+              alignment: go.Spot.TopLeft,
+              defaultAlignment: go.Spot.Left,
+              stretch: go.GraphObject.Horizontal,
+              itemTemplate: itemTempl
+            },
+            new go.Binding("itemArray", "items"))
+        )  // end Table Panel
+      );  // end Node
+    // define the Link template, representing a relationship
+    myDiagram.linkTemplate =
+      $(go.Link,  // the whole link panel
+        {
+          selectionAdorned: true,
+          layerName: "Foreground",
+          reshapable: true,
+          routing: go.Link.AvoidsNodes,
+          corner: 5,
+          curve: go.Link.JumpOver
+        },
+        $(go.Shape,  // the link shape
+          { stroke: "#303B45", strokeWidth: 2.5 }),
+        $(go.TextBlock,  // the "from" label
+          {
+            textAlign: "center",
+            font: "bold 14px sans-serif",
+            stroke: "#1967B3",
+            segmentIndex: 0,
+            segmentOffset: new go.Point(NaN, NaN),
+            segmentOrientation: go.Link.OrientUpright
+          },
+          new go.Binding("text", "text")),
+        $(go.TextBlock,  // the "to" label
+          {
+            textAlign: "center",
+            font: "bold 14px sans-serif",
+            stroke: "#1967B3",
+            segmentIndex: -1,
+            segmentOffset: new go.Point(NaN, NaN),
+            segmentOrientation: go.Link.OrientUpright
+          },
+          new go.Binding("text", "toText"))
+      );
+    // create the model for the E-R diagram
+    jQuery.getJSON('folder/Diagram1.json', load);
+    /*myDiagram.model = new go.GraphLinksModel(nodeDataArray, linkDataArray);*/
+	document.getElementById("svgButton").addEventListener("click", makeSvg); //SaveDiagramLikeSvgfile
+	
+  }
+  function load(jsondata) {
+      // create the model from the data in the JavaScript object parsed from JSON text
+      myDiagram.model = new go.GraphLinksModel(jsondata[0]["nodes"], jsondata[0]["links"]);
+  }
+  
+  // * Firefox
+  function myCallback(blob) {
+    var url = window.URL.createObjectURL(blob);
+    var filename = "mySVGFile.svg";
+
+    var a = document.createElement("a");
+    a.style = "display: none";
+    a.href = url;
+    a.download = filename;
+
+    // IE 11
+    if (window.navigator.msSaveBlob !== undefined) {
+      window.navigator.msSaveBlob(blob, filename);
+      return;
+    }
+
+    document.body.appendChild(a);
+    requestAnimationFrame(function() {
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    });
+  }
+
+  function makeSvg() {
+    var svg = myDiagram.makeSvg({ scale: 1, background: "white" });
+    var svgstr = new XMLSerializer().serializeToString(svg);
+    var blob = new Blob([svgstr], { type: "image/svg+xml" });
+    myCallback(blob);
+  }
+  
+  
+</script>
+</head>
+<body onload="init()">
+<div id="sample">
+  <div id="myDiagramDiv" style="background-color: white; border: solid 1px black; width: 100%; height: 700px"></div>
+  
+  <button id="save-btn">Save diagram like json file</button>
+  <button id="svgButton">Save diagram like SVG file</button>  
+  <script> 
+      $("#save-btn").click(function(){
+
+        //update model
+        for (i = 0; i < myDiagram.model.nodeDataArray.length; i++) {
+            var data = myDiagram.model.nodeDataArray[i];  // get the first node data
+            var node = myDiagram.findNodeForData(data);   // find the corresponding Node
+            var p = node.location.copy();  //getLocation
+            myDiagram.model.nodeDataArray[i].loc = p.x + " "+ p.y;
+        }
+
+        var nodesDataArray = JSON.stringify(myDiagram.model.nodeDataArray);
+        var linksDataArray = JSON.stringify(myDiagram.model.linkDataArray);
+        var blob = new Blob(["[{\"nodes\": " +nodesDataArray +" , \"links\":" +linksDataArray + " }]"],
+            {type: "json/plain;charset=utf-8"}        
+            );
+    
+            saveAs(blob, "test1File.json");
+      });
+      </script>
+</div>
+</body>
+</html>
